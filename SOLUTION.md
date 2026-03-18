@@ -1,113 +1,39 @@
-# Solution Documentation
+# Refactoring Plan: TodoApi
 
-**Candidate Name:** [Your Name]  
-**Completion Date:** [Date]
+## Identified Issues & Areas of Improvement
 
----
+1. **SQL Injection Vulnerabilities**: 
+   The `TodoService` builds SQL queries using string interpolation (e.g., `$"SELECT * FROM Todos WHERE Id = {id}"`). This exposes the application to SQL injection attacks.
 
-## Problems Identified
+2. **Tight Coupling and Lack of Dependency Injection**: 
+   `TodoController` and `UnitTest1` currently instantiate `TodoService` directly using `new TodoService()`. This violates the Dependency Inversion Principle and makes the class hard to independently test. Additionally, `TodoService` instantiates a new SQLite connection internally.
 
-_Describe the issues you found in the original implementation. Consider aspects like:_
-- Architecture and design patterns
-- Code quality and maintainability
-- Security vulnerabilities
-- Performance concerns
-- Testing gaps
+3. **Non-RESTful API Design**: 
+   - All controller actions are decorated with HTTP POST (`[HttpPost]`), even for fetching, updating, or deleting.
+   - The endpoints do not conform to standard REST routing conventions (e.g., uses `/api/createTodo` instead of `/api/todos`).
+   - The `GetTodo` endpoint attempts to double as both "GetAll" and "GetById" depending on the incoming DTO payload.
 
-[Your analysis here]
+4. **Testing Hygiene**: 
+   - Unit tests are directly hitting a physical database ("todos.db") instead of mocking dependencies. 
+   - Test methods rely on state from previous tests (Integration testing instead of true unit testing).
 
----
+## Refactoring Strategy
 
-## Architectural Decisions
+### Part 1: Fix Architectural & Security Fundamentals (The Service)
+- Extract an `ITodoService` interface from `TodoService` to enable Dependency Injection and test mocking.
+- Modify `TodoService` queries to use parameterized SQLite commands (`SqliteParameter`), resolving the SQL injection vulnerability.
 
-_Explain the architecture you chose and why. Consider:_
-- Design patterns applied
-- Project structure changes
-- Technology choices
-- Separation of concerns
+### Part 2: Refactor the Presentation Layer (The Controller)
+- Introduce standard Dependency Injection into `TodoController` (injecting `ITodoService` via constructor).
+- Refactor endpoints (`Get`, `Post`, `Put`, `Delete`) to adhere to standard REST routing conventions (`api/todos`, `api/todos/{id}`).
+- Remove redundant request DTOs (`GetTodoRequest`, `DeleteTodoRequest`) in favor of standard URL parameters.
 
-[Your decisions here]
+### Part 3: Configuration & Bootstrapping
+- Register the `ITodoService` in `Program.cs`'s DI container.
 
----
-
-## Trade-offs
-
-_Discuss compromises you made and the reasoning behind them. Consider:_
-- What did you prioritize?
-- What did you defer or simplify?
-- What alternatives did you consider?
-
-[Your trade-offs here]
+### Part 4: Updating the Test Suite
+- Update existing tests in `UnitTest1.cs` to handle the new DI structure and architectural changes.
 
 ---
 
-## How to Run
-
-### Prerequisites
-[List required software, versions, etc.]
-
-### Build
-```bash
-# Add your build commands
-```
-
-### Run
-```bash
-# Add your run commands
-```
-
-### Test
-```bash
-# Add your test commands
-```
-
----
-
-## API Documentation
-
-### Endpoints
-
-#### Create TODO
-```
-Method: [HTTP method]
-URL: [endpoint]
-Request Body: [example]
-Response: [example]
-```
-
-#### Get TODO(s)
-```
-Method: [HTTP method]
-URL: [endpoint]
-Request: [example]
-Response: [example]
-```
-
-#### Update TODO
-```
-Method: [HTTP method]
-URL: [endpoint]
-Request Body: [example]
-Response: [example]
-```
-
-#### Delete TODO
-```
-Method: [HTTP method]
-URL: [endpoint]
-Request: [example]
-Response: [example]
-```
-
----
-
-## Future Improvements
-
-_What would you do if you had more time? Consider:_
-- Additional features
-- Performance optimizations
-- Enhanced testing
-- Better documentation
-- Deployment considerations
-
-[Your ideas here]
+*This document will track my ongoing rationale and decisions as I incrementally commit changes.*
