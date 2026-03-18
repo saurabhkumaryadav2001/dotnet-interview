@@ -1,8 +1,7 @@
-using Xunit;
 using TodoApi.Services;
 using TodoApi.Models;
 using TodoApi.Controllers;
-using Microsoft.AspNetCore.Mvc;
+
 
 namespace TodoApi.Tests;
 
@@ -12,6 +11,7 @@ public class UnitTest1
     public void Test1()
     {
         var service = new TodoService();
+        Assert.NotNull(service);
         Assert.True(true);
     }
 
@@ -68,7 +68,7 @@ public class UnitTest1
     [Fact]
     public void ControllerTest()
     {
-        var controller = new TodoController();
+        var controller = new TodoController(new TodoService());
         var todo = new Todo { Title = "Test", Description = "Desc" };
 
         var result = controller.CreateTodo(todo);
